@@ -50,7 +50,19 @@ backend/
 
 ---
 
+## 🌐 Production URLs
+
+- **Backend API & Health Interface**: [https://cj-backend-kappa.vercel.app](https://cj-backend-kappa.vercel.app)
+- **Frontend Luxury App**: [https://chandrakala-jewellers.vercel.app](https://chandrakala-jewellers.vercel.app)
+
+---
+
 ## 📡 API Endpoints
+
+### 0. Health & Live Status Monitor
+- `GET /` or `GET /health` or `GET /api/health`
+  - **In Browser**: Renders a luxury dark obsidian & gold interactive Health Dashboard with database latency, system metrics, and live endpoint test ping runners.
+  - **In API / JSON (`?format=json`)**: Returns structured JSON with service status, PostgreSQL ping time, and environment configurations.
 
 ### 1. Rates
 - `GET /api/rates/latest`

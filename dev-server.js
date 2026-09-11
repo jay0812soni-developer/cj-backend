@@ -7,17 +7,19 @@ const url = require('url');
 
 const PORT = process.env.PORT || 3000;
 
-// Import compiled or transpile API handlers
+// Import compiled API handlers
 const latestRatesHandler = require('./dist/api/rates/latest').default;
 const inventoryHandler = require('./dist/api/inventory/index').default;
 const catalogueHandler = require('./dist/api/catalogue/index').default;
 const reserveHandler = require('./dist/api/orders/reserve').default;
+const healthHandler = require('./dist/api/health').default;
 
 const server = http.createServer(async (req, res) => {
   // CORS Headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
@@ -56,9 +58,15 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify(data));
       return res;
     };
+    res.send = (content) => {
+      res.end(content);
+      return res;
+    };
 
     try {
-      if (pathname === '/api/rates/latest') {
+      if (pathname === '/api/health' || pathname === '/health' || pathname === '/') {
+        return await healthHandler(req, res);
+      } else if (pathname === '/api/rates/latest') {
         return await latestRatesHandler(req, res);
       } else if (pathname === '/api/inventory') {
         return await inventoryHandler(req, res);
@@ -78,7 +86,9 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`[CJ Backend] Local development server running on http://localhost:${PORT}`);
-  console.log(`[CJ Backend] Endpoints:`);
+  console.log(`[CJ Backend] Health & Diagnostics:`);
+  console.log(` - GET  http://localhost:${PORT}/api/health (or /health or /)`);
+  console.log(`[CJ Backend] API Endpoints:`);
   console.log(` - GET  http://localhost:${PORT}/api/rates/latest`);
   console.log(` - GET  http://localhost:${PORT}/api/inventory`);
   console.log(` - GET  http://localhost:${PORT}/api/catalogue`);
