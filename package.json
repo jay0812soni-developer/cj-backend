@@ -4,9 +4,10 @@
   "private": true,
   "description": "ChandraKala Jewellers Serverless REST API on Vercel with PostgreSQL",
   "scripts": {
-    "build": "tsc",
+    "build": "echo 'Backend serverless API ready'",
+    "compile": "tsc",
     "lint": "tsc --noEmit",
-    "dev": "tsc && node dev-server.js"
+    "dev": "npm run compile && node dev-server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
