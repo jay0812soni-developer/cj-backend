@@ -70,6 +70,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     endpoints: [
       { path: '/api/rates/latest', method: 'GET', description: 'Live gold and silver bullion rates' },
       { path: '/api/inventory', method: 'GET', description: 'Paginated jewellery inventory' },
+      { path: '/api/cart/items', method: 'GET', description: 'Batch cart items pricing with live rates' },
+      { path: '/api/reviews', method: 'GET', description: 'Customer product reviews' },
+      { path: '/api/reviews/submit', method: 'POST', description: 'Submit customer review' },
+      { path: '/api/blog', method: 'GET', description: 'Jewellery care tips and guides' },
+      { path: '/api/contact/inquiry', method: 'POST', description: 'Contact inquiry to WhatsApp' },
       { path: '/api/catalogue', method: 'GET', description: 'Custom jewellery catalogue showcase' },
       { path: '/api/orders/reserve', method: 'POST', description: '24h stock reservation with row locks' },
       { path: '/api/orders/verify-payment', method: 'POST', description: 'Razorpay HMAC verification' },
