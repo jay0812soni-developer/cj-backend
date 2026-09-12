@@ -86,6 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { path: '/api/admin/notifications/send', method: 'POST', description: 'Broadcast push notifications' },
       { path: '/api/admin/analytics/overview', method: 'GET', description: 'Executive analytics dashboard' },
       { path: '/api/admin/users', method: 'GET,POST', description: 'Admin team management (Superadmin)' },
+      { path: '/api/admin/db/setup', method: 'GET,POST', description: 'PostgreSQL auto-migration and schema bootstrapper' },
       { path: '/api/auth/login', method: 'POST', description: 'Customer JWT authentication' },
       { path: '/api/auth/register', method: 'POST', description: 'Customer registration' },
       { path: '/api/health', method: 'GET', description: 'System health check and live monitor' },
