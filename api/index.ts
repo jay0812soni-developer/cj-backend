@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { handleCors } from '../src/utils/cors';
 
 import health from '../handlers/health';
 import rates from '../handlers/rates';
@@ -28,37 +29,30 @@ import adminDbSetup from '../handlers/admin/db/setup';
 
 type Handler = (req: VercelRequest, res: VercelResponse) => unknown | Promise<unknown>;
 
-function pathnameOf(req: VercelRequest): string {
-  const headerPath = String(
-    req.headers['x-invoke-path'] || req.headers['x-matched-path'] || ''
-  ).split('?')[0];
+function queryRoute(req: VercelRequest): string {
+  const raw = req.query.route ?? req.query.path;
+  if (!raw) return '';
+  return Array.isArray(raw) ? raw.join('/') : String(raw);
+}
+
+function partsOf(req: VercelRequest): string[] {
   const urlPath = String(req.url || '').split('?')[0];
-  let path = headerPath || urlPath || '/';
+  const fromUrl = urlPath.replace(/^\/api\/?/, '').split('/').filter(Boolean);
+  if (fromUrl.length > 0) return fromUrl;
 
-  if (path === '/api' || path === '/api/' || path === '/' || path === '') {
-    const catchAll = req.query.path;
-    if (catchAll) {
-      const segs = Array.isArray(catchAll) ? catchAll.join('/') : String(catchAll);
-      path = `/api/${segs}`;
-    }
-  }
+  const fromQuery = queryRoute(req);
+  if (fromQuery) return fromQuery.split('/').filter(Boolean);
 
-  if (!path.startsWith('/')) path = `/${path}`;
-  if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
-  return path;
+  return [];
 }
 
 function attachParam(req: VercelRequest, key: string, value: string): void {
   req.query = { ...req.query, [key]: value };
 }
 
-function partsOf(req: VercelRequest): string[] {
-  const path = pathnameOf(req);
-  const stripped = path.replace(/^\/api\/?/, '');
-  return stripped.split('/').filter(Boolean);
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (handleCors(req, res)) return;
+
   const parts = partsOf(req);
   const route = parts.join('/');
   let match: Handler | null = null;

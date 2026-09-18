@@ -1,26 +1,39 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+const DEFAULT_ORIGINS = [
+  'https://chandrakala-jewellers.vercel.app',
+  'https://cj-admin.vercel.app',
+  'https://chandrakalajewellers.in',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:8080',
+];
+
 function allowedOrigins(): string[] {
-  const raw = process.env.CORS_ORIGINS || '';
-  return raw
+  const extra = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+  return [...new Set([...DEFAULT_ORIGINS, ...extra])];
+}
+
+function isAllowedOrigin(origin: string): boolean {
+  if (!origin) return false;
+  if (allowedOrigins().includes(origin)) return true;
+  try {
+    const host = new URL(origin).hostname;
+    return (
+      host.endsWith('.vercel.app') &&
+      (host.startsWith('chandrakala-jewellers') || host.startsWith('cj-admin'))
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function handleCors(req: VercelRequest, res: VercelResponse): boolean {
   const requestOrigin = String(req.headers.origin || '');
-  const allowList = allowedOrigins();
-  const isProd = process.env.NODE_ENV === 'production';
-
-  let allowOrigin = requestOrigin;
-  if (allowList.length > 0) {
-    allowOrigin = allowList.includes(requestOrigin) ? requestOrigin : allowList[0];
-  } else if (isProd && !requestOrigin) {
-    allowOrigin = 'https://chandrakalajewellers.in';
-  } else if (!requestOrigin) {
-    allowOrigin = '*';
-  }
+  const allowOrigin = isAllowedOrigin(requestOrigin) ? requestOrigin : '*';
 
   res.setHeader('Access-Control-Allow-Origin', allowOrigin);
   res.setHeader('Vary', 'Origin');
@@ -29,13 +42,10 @@ export function handleCors(req: VercelRequest, res: VercelResponse): boolean {
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
   );
-
-  if (allowOrigin !== '*') {
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
+  res.setHeader('Access-Control-Max-Age', '86400');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
+    res.status(204).end();
     return true;
   }
 
