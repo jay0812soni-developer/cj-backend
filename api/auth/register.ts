@@ -2,13 +2,18 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../../src/db';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'cj-jewellers-super-secret-key-2026';
+import { handleCors } from '../../src/utils/cors';
+import { getJwtSecret } from '../../src/utils/jwt-config';
+import { requireDatabase } from '../../src/utils/db-ready';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (handleCors(req, res)) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, message: 'Method Not Allowed' });
   }
+
+  if (!requireDatabase(res)) return;
 
   const { name, phone, password, email = '' } = req.body;
 
@@ -49,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const token = jwt.sign(
       { userId: user.id, phone: user.phone, role: 'customer' },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '30d' }
     );
 

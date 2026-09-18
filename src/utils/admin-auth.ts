@@ -1,39 +1,13 @@
 ﻿import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
 import type { VercelRequest } from '@vercel/node';
-
-const JWT_SECRET = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'cj_chandrakala_admin_jwt_secret_key_2026';
+import { getJwtSecret } from './jwt-config';
 
 export interface AdminUser {
   id: number;
   username: string;
-  role: 'superadmin' | 'admin' | 'deven';
+  role: string;
   displayName: string;
 }
-
-export const SEEDED_ADMIN_USERS: Array<AdminUser & { passwordPlain: string; passwordHash?: string }> = [
-  {
-    id: 1,
-    username: 'superadmin',
-    passwordPlain: 'Super@12345',
-    role: 'superadmin',
-    displayName: 'Soni Jaykumar Hasmukh',
-  },
-  {
-    id: 2,
-    username: 'admin',
-    passwordPlain: 'mVsr@1617',
-    role: 'admin',
-    displayName: 'Hasmukh Hiralal Soni',
-  },
-  {
-    id: 3,
-    username: 'deven',
-    passwordPlain: 'mVsr@1617',
-    role: 'deven',
-    displayName: 'Deven Hasmukhbhai Soni',
-  },
-];
 
 export function generateAdminToken(user: AdminUser): string {
   return jwt.sign(
@@ -43,7 +17,7 @@ export function generateAdminToken(user: AdminUser): string {
       role: user.role,
       displayName: user.displayName,
     },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '30d' }
   );
 }
@@ -55,17 +29,33 @@ export function verifyAdminToken(req: VercelRequest): AdminUser | null {
       return null;
     }
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    if (!decoded || !decoded.username || !decoded.role) {
+    const decoded = jwt.verify(token, getJwtSecret()) as {
+      id?: number;
+      username?: string;
+      role?: string;
+      displayName?: string;
+    };
+    if (!decoded?.username || !decoded?.role) {
       return null;
     }
     return {
-      id: Number(decoded.id) || 1,
+      id: Number(decoded.id) || 0,
       username: String(decoded.username),
-      role: decoded.role,
+      role: String(decoded.role),
       displayName: String(decoded.displayName || decoded.username),
     };
   } catch {
     return null;
   }
+}
+
+export function requireAdmin(req: VercelRequest, roles?: string[]): AdminUser | null {
+  const user = verifyAdminToken(req);
+  if (!user) {
+    return null;
+  }
+  if (roles && roles.length > 0 && !roles.includes(user.role)) {
+    return null;
+  }
+  return user;
 }

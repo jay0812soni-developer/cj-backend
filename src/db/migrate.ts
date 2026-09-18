@@ -197,46 +197,27 @@ export async function runDatabaseMigration(): Promise<{ success: boolean; messag
       ON CONFLICT (setting_key) DO NOTHING;
     `);
 
-    // 4. Seed Admin Users (bcrypt hashes)
-    const adminHash = await bcrypt.hash('mVsr@1617', 10);
-    const superHash = await bcrypt.hash('Super@12345', 10);
-
-    await query(
-      `INSERT INTO admin_users (username, password_hash, role, display_name)
-       VALUES 
-       ('superadmin', $1, 'superadmin', 'Soni Jaykumar Hasmukh'),
-       ('admin', $2, 'admin', 'Hasmukh Hiralal Soni'),
-       ('deven', $2, 'deven', 'Deven Hasmukhbhai Soni')
-       ON CONFLICT (username) DO UPDATE SET display_name = EXCLUDED.display_name, role = EXCLUDED.role;`,
-      [superHash, adminHash]
-    );
-
-    // 5. Seed Jewellery Items
-    const itemsCheck = await query('SELECT COUNT(*)::int as c FROM jewellery_items');
-    if (itemsCheck.rows[0].c === 0) {
-      await query(`
-        INSERT INTO jewellery_items (id, name, image, description, purity, stone, category, sku, dimensions, weight, cached_price, metal_type, is_favourite, is_sold_out)
-        VALUES
-        (110, 'Pendent Butti Set', 'item_6a72eda95a8789.42699417.jpg', 'New design made to order in 22K hallmark gold', '22K 916', 'Cubic Zirconia', 'Necklace Sets', 'CJ-G-110', 'Medium', 11.640, 224977.92, 'gold', TRUE, FALSE),
-        (109, 'Gold Set with Earrings', 'item_6a72ed6a62cde2.58667970.jpg', 'Traditional royal bridal set in 916 yellow gold', '22K 916', 'Kundan', 'Bridal Sets', 'CJ-G-109', 'Large', 22.210, 349390.17, 'gold', TRUE, FALSE),
-        (108, 'Chain with Pearl', 'item_6a72ecafaab347.25954770.jpg', '916 gold chain adorned with freshwater cultured pearls', '22K 916', 'Pearl', 'Chains', 'CJ-G-108', '18 inches', 7.000, 135296.00, 'gold', TRUE, FALSE),
-        (85, '925 Silver Folding Ring', 'item_68c250db9ca9d1.78704969.jpg', 'Sterling silver 925 folding ring with dual wear style', '925 Silver', 'CZ', 'Rings', 'CJ-S-085', 'Adjustable', 5.400, 3920.40, 'silver_925', TRUE, FALSE),
-        (64, 'Silver Fancy Kada', 'IMG_1395.jpeg', 'Pure silver solid gents kada with intricate carving', '99.9% Silver', 'None', 'Kada', 'CJ-S-064', 'Size 2.8', 31.800, 9811.89, 'silver', FALSE, FALSE)
-        ON CONFLICT (id) DO NOTHING;
-      `);
+    // 4. Optional first admin from env — never hardcode staff passwords.
+    // Production staff must be imported from MySQL (PHP bcrypt hashes). See docs/DATABASE_MIGRATION.md.
+    const bootstrapUser = (process.env.ADMIN_BOOTSTRAP_USERNAME || '').trim().toLowerCase();
+    const bootstrapPass = process.env.ADMIN_BOOTSTRAP_PASSWORD || '';
+    const bootstrapRole = (process.env.ADMIN_BOOTSTRAP_ROLE || 'superadmin').trim();
+    if (bootstrapUser && bootstrapPass.length >= 6) {
+      const existingAdmins = await query('SELECT COUNT(*)::int AS c FROM admin_users');
+      if (Number(existingAdmins.rows[0].c) === 0) {
+        const hash = await bcrypt.hash(bootstrapPass, 10);
+        const role = bootstrapRole === 'admin' ? 'admin' : 'superadmin';
+        await query(
+          `INSERT INTO admin_users (username, password_hash, role, display_name)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (username) DO NOTHING`,
+          [bootstrapUser, hash, role, bootstrapUser]
+        );
+      }
     }
 
-    // 6. Seed Catalogue Products
-    const prodCheck = await query('SELECT COUNT(*)::int as c FROM products');
-    if (prodCheck.rows[0].c === 0) {
-      await query(`
-        INSERT INTO products (id, name, description, image_filename, category) VALUES
-        (161, 'Royal Kundan Choker Design', 'Exquisite handcrafted bridal choker design for custom orders.', 'jewellery_6a72cfeba28383.08197860.jpg', 'Choker'),
-        (162, 'Antique Temple Jhumka Design', 'South Indian antique finish temple jhumkas.', 'jewellery_6a72cfeba37d68.10630799.jpg', 'Earrings'),
-        (163, 'Floral Diamond Dokiya Concept', 'Lightweight 18K/22K mangalsutra dokiya concept piece.', 'jewellery_6a72cfeba3c762.10799803.jpg', 'Pendant')
-        ON CONFLICT (id) DO NOTHING;
-      `);
-    }
+    // 5–6. Do not insert invented jewellery/catalogue copy.
+    // Import real rows from the MySQL dump (docs/DATABASE_MIGRATION.md).
 
     const tableListRes = await query(`
       SELECT table_name 

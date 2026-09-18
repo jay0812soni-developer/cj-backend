@@ -187,3 +187,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(customer_phone);
 CREATE INDEX IF NOT EXISTS idx_orders_reserved_until ON orders(reserved_until);
 CREATE INDEX IF NOT EXISTS idx_reviews_product_approved ON product_reviews(product_id, is_approved);
+
+-- Remaining PHP tables (push, visitors, remember-me, messages, etc.):
+-- see database/migrations/002_php_parity_tables.sql
+

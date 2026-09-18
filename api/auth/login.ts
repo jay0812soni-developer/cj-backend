@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../../src/db';
 import { handleCors } from '../../src/utils/cors';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'cj-jewellers-super-secret-key-2026';
+import { getJwtSecret } from '../../src/utils/jwt-config';
+import { verifyPassword } from '../../src/utils/passwords';
+import { requireDatabase } from '../../src/utils/db-ready';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (handleCors(req, res)) return;
@@ -19,6 +19,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ ok: false, message: 'Phone and password are required' });
   }
 
+  if (!requireDatabase(res)) return;
+
   try {
     const cleanPhone = phone.toString().replace(/\D+/g, '').slice(-10);
 
@@ -32,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const user = userRes.rows[0];
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    const passwordMatch = await verifyPassword(String(password), String(user.password_hash));
 
     if (!passwordMatch) {
       return res.status(401).json({ ok: false, message: 'Invalid mobile number or password' });
@@ -40,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const token = jwt.sign(
       { userId: user.id, phone: user.phone, role: 'customer' },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '30d' }
     );
 
