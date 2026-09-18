@@ -8,11 +8,11 @@ const url = require('url');
 const PORT = process.env.PORT || 3000;
 
 // Import compiled API handlers
-const latestRatesHandler = require('./dist/api/rates/latest').default;
-const inventoryHandler = require('./dist/api/inventory/index').default;
-const catalogueHandler = require('./dist/api/catalogue/index').default;
-const reserveHandler = require('./dist/api/orders/reserve').default;
-const healthHandler = require('./dist/api/health').default;
+const latestRatesHandler = require('./dist/handlers/rates').default;
+const inventoryHandler = require('./dist/handlers/inventory/index').default;
+const catalogueHandler = require('./dist/handlers/catalogue/index').default;
+const reserveHandler = require('./dist/handlers/orders/reserve').default;
+const healthHandler = require('./dist/handlers/health').default;
 
 const server = http.createServer(async (req, res) => {
   // CORS Headers

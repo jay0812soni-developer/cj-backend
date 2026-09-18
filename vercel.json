@@ -8,10 +8,6 @@
     {
       "source": "/health",
       "destination": "/api/health"
-    },
-    {
-      "source": "/api/rates/latest",
-      "destination": "/api/rates"
     }
   ],
   "headers": [
